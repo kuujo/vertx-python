@@ -76,7 +76,7 @@
 	@else{param.type.kind == CLASS_OBJECT}
 		util.python_to_java(@{paramName})
 	@else{helper.isBasicType(param.type.name) || param.type.name.equals('java.lang.Void')}
-		@{paramName}
+		@{convertName(paramName)}
 	@else{}
 		@{paramName}._jdel()
 	@end{}
