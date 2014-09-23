@@ -5,7 +5,7 @@
 	def requiresTypeCheck(methods) {
 		for (method : methods) {
 			for (param : method.params) {
-				if ([CLASS_PRIMITIVE, CLASS_BOXED_PRIMITIVE, CLASS_STRING, CLASS_JSON_ARRAY, CLASS_JSON_OBJECT, CLASS_HANDLER].contains(param.type.kind)) {
+				if ([CLASS_PRIMITIVE, CLASS_BOXED_PRIMITIVE, CLASS_STRING, CLASS_JSON_ARRAY, CLASS_JSON_OBJECT, CLASS_HANDLER, CLASS_OPTIONS].contains(param.type.kind)) {
 					return true;
 				}
 			}
