@@ -1,5 +1,5 @@
-@comment{"Generate a call to a Java API method"}
-@comment{"===================================="}
+@comment{"Generate a Python class"}
+@comment{"======================="}
 
 @code{
 	def requiresTypeCheck(methods) {
@@ -38,8 +38,14 @@
 	}
 }
 
+@code{
+	def isReserved(name) {
+		return ['if', 'elif', 'else', 'from', 'in', 'not', 'and', 'or', 'as', 'try', 'except', 'raise', 'return', 'lambda', 'finally', 'continue', 'for', 'while', 'yield', 'pass', 'with', 'assert', 'break', 'class', 'def', 'exec', 'del', 'import'].contains(name);
+	}
+}
+
 @declare{'genMethodCall'}
-@if{static}jvm.@{ifaceFQCN}@else{}self.j@{ifaceName}@end{}.@{method.name}(
+@if{static}util.jvm.@{ifaceFQCN}@else{}self.j@{ifaceName}@end{}.@{method.name}(
 	@foreach{param: method.params}
 		@code{argName=helper.convertCamelCaseToUnderscores(param.name);}
 		@includeNamed{'convParam'}
@@ -54,12 +60,11 @@
 	@if{param.type.name.startsWith('io.vertx.core.Handler<')}
 		@code{genericType = helper.getGenericType(param.type.name)}
 		@if{genericType.startsWith('io.vertx.core.AsyncResult<')}
-			@code{genericType = helper.getGenericType(genericType)}
-			Async@{helper.getSimpleName(genericType)}Handler(@{paramName})
+			Async@{helper.getNonGenericType(helper.getSimpleName(helper.getGenericType(genericType))).replace('<', '').replace('>', '')}Handler(@{paramName})
 		@else{genericType.equals('java.lang.Void')}
 			@{paramName}
 		@else{}
-			@{helper.getSimpleName(genericType)}Handler(@{paramName})
+			@{helper.getNonGenericType(helper.getSimpleName(genericType))}Handler(@{paramName})
 		@end{}
 	@else{param.type.name.equals('io.vertx.core.json.JsonObject')}
 		util.dict_to_json(@{paramName})
@@ -307,7 +312,7 @@ result.result()
 			@if{param.type.name.startsWith('io.vertx.core.Handler<') && !handlers.contains(param.type.name)}
 				@code{genericType = helper.getGenericType(param.type.name)}
 				@if{genericType.startsWith('io.vertx.core.AsyncResult<')}
-					@code{className = 'Async' + helper.getNonGenericType(helper.getSimpleName(helper.getGenericType(genericType))) + 'Handler'}
+					@code{className = 'Async' + helper.getNonGenericType(helper.getSimpleName(helper.getGenericType(genericType))).replace('<', '').replace('>', '') + 'Handler'}
 				@else{}
 					@code{className = helper.getNonGenericType(helper.getSimpleName(genericType)) + 'Handler'}
 				@end{}
@@ -354,7 +359,13 @@ result.result()
 # limitations under the License.\n
 
 @comment{"Import utility functions into all modules"}
+
 from vertx_python import util\n
+\n
+
+@comment{"Initalize the Vert.x client if necessary"}
+
+util.vertx_init()\n
 \n
 
 @comment{"Generate the imports"}
@@ -369,13 +380,13 @@ from vertx_python import util\n
 @comment{"The top level vars for the module"}
 
 @foreach{optionType: referencedOptionsTypes}
-	@{helper.getSimpleName(optionType)} = jvm.@{optionType}\n
+	@{helper.getSimpleName(optionType)} = util.jvm.@{optionType}\n
 @end{}
 \n
 @code{ifaceName = helper.decapitaliseFirstLetter(ifaceSimpleName)}
 
 @comment{"The class"}
-class @{ifaceSimpleName}(@if{!superTypes.isEmpty()}object, @else{}object@end{}@foreach{superType: superTypes}@{helper.getSimpleName(helper.getNonGenericType(superType))}@end{", "}):\n
+class @{ifaceSimpleName}(@foreach{superType: superTypes}@{helper.getSimpleName(helper.getNonGenericType(superType))}@end{", "}@if{!superTypes.isEmpty()}, object@else{}object@end{}):\n
 
 @comment{"The main comment"}
 @if{ifaceComment != null}

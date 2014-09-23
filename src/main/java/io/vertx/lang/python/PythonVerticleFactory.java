@@ -6,6 +6,9 @@ import io.vertx.core.Verticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxException;
 import io.vertx.core.spi.VerticleFactory;
+
+import java.lang.ProcessBuilder.Redirect;
+
 import py4j.GatewayServer;
 
 /**
@@ -16,6 +19,7 @@ public class PythonVerticleFactory implements VerticleFactory {
   private Vertx vertx;
   private GatewayServer gateway;
   private int port = 25333;
+  private int client;
 
   @Override
   public void init(Vertx vertx) {
@@ -52,7 +56,10 @@ public class PythonVerticleFactory implements VerticleFactory {
     @Override
     public void start(Future<Void> startFuture) throws Exception {
       init();
-      process = Runtime.getRuntime().exec(String.format("python _verticle.py %d %s", port, verticleName.substring(verticleName.lastIndexOf('.'))));
+      ProcessBuilder pb = new ProcessBuilder("python", verticleName, String.valueOf(port), String.valueOf(client));
+      pb.redirectOutput(Redirect.INHERIT);
+      pb.redirectError(Redirect.INHERIT);
+      process = pb.start();
       if (asyncStart) {
         this.startFuture = startFuture;
       } else {
@@ -100,6 +107,9 @@ public class PythonVerticleFactory implements VerticleFactory {
       while (!connected) {
         try {
           gateway = new GatewayServer(this, port);
+          client = gateway.getCallbackClient().getPort();
+          gateway.start();
+          connected = true;
         } catch (Exception e) {
           port++;
         }
@@ -107,7 +117,6 @@ public class PythonVerticleFactory implements VerticleFactory {
           throw new VertxException("Failed to bind to port");
         }
       }
-      gateway.start();
     }
   }
 
