@@ -40,14 +40,15 @@
 
 @code{
 	def isReserved(name) {
-		return ['if', 'elif', 'else', 'from', 'in', 'not', 'and', 'or', 'as', 'try', 'except', 'raise', 'return', 'lambda', 'finally', 'continue', 'for', 'while', 'yield', 'pass', 'with', 'assert', 'break', 'class', 'def', 'exec', 'del', 'import'].contains(name);
+		reserved = ['if', 'elif', 'else', 'from', 'in', 'not', 'and', 'or', 'as', 'try', 'except', 'raise', 'return', 'lambda', 'finally', 'continue', 'for', 'while', 'yield', 'pass', 'with', 'assert', 'break', 'class', 'def', 'exec', 'del', 'import'];
+		return reserved.contains(name);
 	}
 }
 
 @declare{'genMethodCall'}
 @if{static}util.jvm.@{ifaceFQCN}@else{}self.j@{ifaceName}@end{}.@{method.name}(
 	@foreach{param: method.params}
-		@code{argName=helper.convertCamelCaseToUnderscores(param.name);}
+		@code{argName=convertName(param.name);}
 		@includeNamed{'convParam'}
 	@end{", "})
 @end{}
@@ -131,9 +132,9 @@ result.result()
 		@end{}
 		@foreach{paramName: missingParamNames}
 			@if{optionsParam != null && optionsParam.name == paramName}
-				len(@{helper.convertCamelCaseToUnderscores(paramName)}) == 0
+				len(@{convertName(paramName)}) == 0
 			@else{}
-				@{helper.convertCamelCaseToUnderscores(paramName)} is None
+				@{convertName(paramName)} is None
 			@end{}
 		@end{" and "}
 		 and 
@@ -143,27 +144,27 @@ result.result()
 			@if{param.type.name == 'long' || param.type.name == 'java.lang.Long' ||
 				param.type.name == 'int'  || param.type.name == 'java.lang.Integer' ||
 				param.type.name == 'short' || param.type.name == 'java.lang.Short'}
-				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, int)
+				@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, int)
 			@else{param.type.name == 'float' || param.type.name == 'java.lang.Float' ||
 				param.type.name == 'double' || param.type.name == 'java.lang.Double'}
-				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, float)
+				@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, float)
 			@else{param.type.name == 'byte' || param.type.name == 'java.lang.Byte'}
-				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, byte)
+				@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, byte)
 			@else{param.type.name == 'boolean' || param.type.name == 'java.lang.Boolean'}
-				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, bool)
+				@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, bool)
 			@else{param.type.name == 'char' || param.type.name == 'java.lang.Character'}
-				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
+				@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, basestring)
 			@end{}
 		@else{param.type.kind == CLASS_STRING}
-			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
+			@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, basestring)
 		@else{param.type.kind == CLASS_JSON_OBJECT}
-	    	@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, dict)
+	    	@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, dict)
 		@else{param.type.kind == CLASS_JSON_ARRAY}
-			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, (list, tuple))
+			@{convertName(param.name)} is not None and isinstance(@{convertName(param.name)}, (list, tuple))
 		@else{param.type.kind == CLASS_HANDLER}
-			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and callable(@{helper.convertCamelCaseToUnderscores(param.name)})
+			@{convertName(param.name)} is not None and callable(@{convertName(param.name)})
 		@else{param.type.kind == CLASS_OPTIONS}
-			len(@{helper.convertCamelCaseToUnderscores(param.name)}) > 0
+			len(@{convertName(param.name)}) > 0
 		@else{}
 			True
 		@end{}
@@ -227,19 +228,19 @@ result.result()
 
 	@if{baseMethod != null && static == method.staticMethod}
 		@if{static}@{ind}@@classmethod\n@end{}
-		@{ind}def @{helper.convertCamelCaseToUnderscores(methodName)}(self
+		@{ind}def @{convertName(methodName)}(self
 		@foreach{param : requiredParams}
 			@if{optionsParam == null || param != optionsParam.name}
-				, @{helper.convertCamelCaseToUnderscores(param)}
+				, @{convertName(param)}
 			@end{}
 		@end{}
 		@foreach{param: optionalParams}
 			@if{optionsParam == null || param != optionsParam.name}
-				, @{helper.convertCamelCaseToUnderscores(param)}=None
+				, @{convertName(param)}=None
 			@end{}
 		@end{}
 		@if{optionsParam != null}
-			, **@{helper.convertCamelCaseToUnderscores(optionsParam.name)}
+			, **@{convertName(optionsParam.name)}
 		@end{}):\n
 
 		@if{method.comment != null && helper.removeTags(method.comment).length() > 0}
@@ -257,7 +258,7 @@ result.result()
 					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
 				@end{}
 				@{ind}    else:\n
-				@{ind}        raise TypeError("Invalid arguments for @{helper.convertCamelCaseToUnderscores(methodName)}")\n
+				@{ind}        raise TypeError("Invalid arguments for @{convertName(methodName)}")\n
 			@else{}
 				@if{baseMethod.fluent}
 					@{ind}    @includeNamed{'genMethodCall'; method=baseMethod}\n
@@ -283,7 +284,7 @@ result.result()
 					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
 				@end{}
 				@{ind}    else:\n
-				@{ind}        raise TypeError("Invalid arguments for @{helper.convertCamelCaseToUnderscores(methodName)}")\n
+				@{ind}        raise TypeError("Invalid arguments for @{convertName(methodName)}")\n
 			@else{}
 				@{ind}    else:\n
 				@if{baseMethod.fluent}
@@ -373,7 +374,7 @@ util.vertx_init()\n
 @foreach{referencedType : referencedTypes}
 	@code{refedType = helper.getNonGenericType(referencedType.name)}
 	@code{refedPackage = refedType.substring(refedType.lastIndexOf('.', refedType.lastIndexOf('.') - 1) + 1, refedType.lastIndexOf('.'))}
-	from @{referencedType.moduleName}_python.@{refedPackage}.@{helper.convertCamelCaseToUnderscores(referencedType.simpleName)} import @{referencedType.simpleName}\n
+	from @{referencedType.moduleName}_python.@{refedPackage}.@{convertName(referencedType.simpleName)} import @{referencedType.simpleName}\n
 @end{}
 \n
 
