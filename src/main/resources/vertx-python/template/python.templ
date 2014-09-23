@@ -115,7 +115,7 @@ result.result()
 @comment{"Generate a Python condition"}
 @comment{"==========================="}
 
-@declare{'getCondition'}
+@declare{'genCondition'}
 	@code{methodParamNames = getParamNames(method)}
 	@if{paramNames.size() > methodParamNames.size()}
 		@code{missingParamNames = []}
@@ -124,34 +124,41 @@ result.result()
 				@code{missingParamNames.add(paramName)}
 			@end{}
 		@end{}
-		@foreach{paramName: missingParamNames}@{helper.convertCamelCaseToUnderscores(paramName)} is None@end{" and "}
+		@foreach{paramName: missingParamNames}
+			@if{optionsParam != null && optionsParam.name == paramName}
+				len(@{helper.convertCamelCaseToUnderscores(paramName)}) == 0
+			@else{}
+				@{helper.convertCamelCaseToUnderscores(paramName)} is None
+			@end{}
+		@end{" and "}
 		 and 
 	@end{}
 	@foreach{param: method.params}
-		@if{optionalParams.contains(param.name)}@{helper.convertCamelCaseToUnderscores(param.name)} is not None and @end{}
 		@if{param.type.kind == CLASS_PRIMITIVE || param.type.kind == CLASS_BOXED_PRIMITIVE}
 			@if{param.type.name == 'long' || param.type.name == 'java.lang.Long' ||
 				param.type.name == 'int'  || param.type.name == 'java.lang.Integer' ||
 				param.type.name == 'short' || param.type.name == 'java.lang.Short'}
-				isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, int)
+				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, int)
 			@else{param.type.name == 'float' || param.type.name == 'java.lang.Float' ||
 				param.type.name == 'double' || param.type.name == 'java.lang.Double'}
-				isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, float)
+				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, float)
 			@else{param.type.name == 'byte' || param.type.name == 'java.lang.Byte'}
-				isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, byte)
+				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, byte)
 			@else{param.type.name == 'boolean' || param.type.name == 'java.lang.Boolean'}
-				isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, bool)
+				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, bool)
 			@else{param.type.name == 'char' || param.type.name == 'java.lang.Character'}
-				isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
+				@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
 			@end{}
 		@else{param.type.kind == CLASS_STRING}
-			isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
+			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, basestring)
 		@else{param.type.kind == CLASS_JSON_OBJECT}
-	    	isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, dict)
+	    	@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, dict)
 		@else{param.type.kind == CLASS_JSON_ARRAY}
-			isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, (list, tuple))
+			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and isinstance(@{helper.convertCamelCaseToUnderscores(param.name)}, (list, tuple))
 		@else{param.type.kind == CLASS_HANDLER}
-			callable(@{helper.convertCamelCaseToUnderscores(param.name)})
+			@{helper.convertCamelCaseToUnderscores(param.name)} is not None and callable(@{helper.convertCamelCaseToUnderscores(param.name)})
+		@else{param.type.kind == CLASS_OPTIONS}
+			len(@{helper.convertCamelCaseToUnderscores(param.name)}) > 0
 		@else{}
 			True
 		@end{}
@@ -164,10 +171,13 @@ result.result()
 @declare{'genMethod'}
 	@code{methodList = methodsByName.get(methodName); overloaded = methodList.size() > 1; method = methodList.get(0);}
 
-	@code{requiredParams = []; optionalParams = []; paramNames = []; cnt = 0;}
+	@code{requiredParams = []; optionalParams = []; optionsParam = null; paramNames = []; cnt = 0;}
 	@foreach{method: methodList}
 		@if{cnt == 0}
 			@foreach{param: method.params}
+				@if{param.type.kind == CLASS_OPTIONS}
+					@code{optionsParam = param}
+				@end{}
 				@code{requiredParams.add(param.name);}
 			@end{}
 			@code{cnt++}
@@ -175,6 +185,9 @@ result.result()
 			@code{newRequiredParams = []}
 			@foreach{param: method.params}
 				@if{!paramNames.contains(param.name)}@code{paramNames.add(param.name)}@end{}
+				@if{param.type.kind == CLASS_OPTIONS}
+					@code{optionsParam = param}
+				@end{}
 				@if{requiredParams.contains(param.name)}
 					@code{newRequiredParams.add(param.name)}
 				@else{!optionalParams.contains(param.name)}
@@ -209,7 +222,21 @@ result.result()
 
 	@if{baseMethod != null && static == method.staticMethod}
 		@if{static}@{ind}@@classmethod\n@end{}
-		@{ind}def @{helper.convertCamelCaseToUnderscores(methodName)}(self@if{!requiredParams.isEmpty()}, @foreach{param: requiredParams}@{helper.convertCamelCaseToUnderscores(param)}@end{", "}@end{}@if{!optionalParams.isEmpty()}, @foreach{param: optionalParams}@{helper.convertCamelCaseToUnderscores(param)}=None@end{", "}@end{}):\n
+		@{ind}def @{helper.convertCamelCaseToUnderscores(methodName)}(self
+		@foreach{param : requiredParams}
+			@if{optionsParam == null || param != optionsParam.name}
+				, @{helper.convertCamelCaseToUnderscores(param)}
+			@end{}
+		@end{}
+		@foreach{param: optionalParams}
+			@if{optionsParam == null || param != optionsParam.name}
+				, @{helper.convertCamelCaseToUnderscores(param)}=None
+			@end{}
+		@end{}
+		@if{optionsParam != null}
+			, **@{helper.convertCamelCaseToUnderscores(optionsParam.name)}
+		@end{}):\n
+
 		@if{method.comment != null && helper.removeTags(method.comment).length() > 0}
 			@{helper.indentString("\"\"\"\n" + helper.removeTags(method.comment) + "\"\"\"\n", ind + "    ")}
 		@else{}
@@ -218,7 +245,7 @@ result.result()
 
 		@if{childMethods.isEmpty()}
 			@if{requiresTypeCheck([baseMethod])}
-				@{ind}    if @includeNamed{'getCondition';method=baseMethod;}:\n
+				@{ind}    if @includeNamed{'genCondition';method=baseMethod;}:\n
 				@if{baseMethod.fluent}
 					@{ind}        @includeNamed{'genMethodCall'; method=baseMethod}\n
 				@else{}
@@ -236,7 +263,7 @@ result.result()
 		@else{}
 			@code{mcnt = 0;}
 			@foreach{method: childMethods}
-				@{ind}    @if{mcnt == 0}if @code{mcnt++}@else{}elif @end{}@includeNamed{'getCondition'}:\n
+				@{ind}    @if{mcnt == 0}if @code{mcnt++}@else{}elif @end{}@includeNamed{'genCondition'}:\n
 				@if{method.fluent}
 					@{ind}        @includeNamed{'genMethodCall'}\n
 				@else{}
@@ -244,7 +271,7 @@ result.result()
 				@end{}
 			@end{}
 			@if{requiresTypeCheck([baseMethod])}
-				@{ind}    elif @includeNamed{'getCondition';method=baseMethod;}:\n
+				@{ind}    elif @includeNamed{'genCondition';method=baseMethod;}:\n
 				@if{baseMethod.fluent}
 					@{ind}        @includeNamed{'genMethodCall'; method=baseMethod}\n
 				@else{}
