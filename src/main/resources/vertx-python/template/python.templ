@@ -219,26 +219,49 @@ result.result()
 		@if{childMethods.isEmpty()}
 			@if{requiresTypeCheck([baseMethod])}
 				@{ind}    if @includeNamed{'getCondition';method=baseMethod;}:\n
-				@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@if{baseMethod.fluent}
+					@{ind}        @includeNamed{'genMethodCall'; method=baseMethod}\n
+				@else{}
+					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@end{}
 				@{ind}    else:\n
 				@{ind}        raise TypeError("Invalid arguments for @{helper.convertCamelCaseToUnderscores(methodName)}")\n
 			@else{}
-				@{ind}    return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@if{baseMethod.fluent}
+					@{ind}    @includeNamed{'genMethodCall'; method=baseMethod}\n
+				@else{}
+					@{ind}    return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@end{}
 			@end{}
 		@else{}
 			@code{mcnt = 0;}
 			@foreach{method: childMethods}
 				@{ind}    @if{mcnt == 0}if @code{mcnt++}@else{}elif @end{}@includeNamed{'getCondition'}:\n
-				@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=method.returnType.name}\n
+				@if{method.fluent}
+					@{ind}        @includeNamed{'genMethodCall'}\n
+				@else{}
+					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=method.returnType.name}\n
+				@end{}
 			@end{}
 			@if{requiresTypeCheck([baseMethod])}
 				@{ind}    elif @includeNamed{'getCondition';method=baseMethod;}:\n
-				@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@if{baseMethod.fluent}
+					@{ind}        @includeNamed{'genMethodCall'; method=baseMethod}\n
+				@else{}
+					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@end{}
 				@{ind}    else:\n
 				@{ind}        raise TypeError("Invalid arguments for @{helper.convertCamelCaseToUnderscores(methodName)}")\n
 			@else{}
 				@{ind}    else:\n
-				@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@if{baseMethod.fluent}
+					@{ind}        @includeNamed{'genMethodCall'; method=baseMethod}\n
+				@else{}
+					@{ind}        return @includeNamed{'convReturn'; templ='genMethodCall'; returnType=baseMethod.returnType.name; method=baseMethod}\n
+				@end{}
+			@end{}
+			@if{baseMethod.fluent}
+				        return @if{static}@{ifaceSimpleName}@else{}self@end{}\n
 			@end{}
 		@end{}
 		\n
@@ -257,9 +280,9 @@ result.result()
 			@if{param.type.name.startsWith('io.vertx.core.Handler<') && !handlers.contains(param.type.name)}
 				@code{genericType = helper.getGenericType(param.type.name)}
 				@if{genericType.startsWith('io.vertx.core.AsyncResult<')}
-					@code{className = 'Async' + helper.getSimpleName(helper.getGenericType(genericType)) + 'Handler'}
+					@code{className = 'Async' + helper.getNonGenericType(helper.getSimpleName(helper.getGenericType(genericType))) + 'Handler'}
 				@else{}
-					@code{className = helper.getSimpleName(genericType) + 'Handler'}
+					@code{className = helper.getNonGenericType(helper.getSimpleName(genericType)) + 'Handler'}
 				@end{}
 				class @{className}(object):\n
 				    class Java:\n
@@ -312,7 +335,7 @@ from vertx_python import util\n
 @foreach{referencedType : referencedTypes}
 	@code{refedType = helper.getNonGenericType(referencedType.name)}
 	@code{refedPackage = refedType.substring(refedType.lastIndexOf('.', refedType.lastIndexOf('.') - 1) + 1, refedType.lastIndexOf('.'))}
-	from @{referencedType.moduleName}_python.@{refedPackage} import @{helper.convertCamelCaseToUnderscores(referencedType.simpleName)}\n
+	from @{referencedType.moduleName}_python.@{refedPackage}.@{helper.convertCamelCaseToUnderscores(referencedType.simpleName)} import @{referencedType.simpleName}\n
 @end{}
 \n
 
